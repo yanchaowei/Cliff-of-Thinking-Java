@@ -6,7 +6,7 @@
 
 缓存的种类有很多，本文涉及：私有与共享缓存；对比缓存与强制缓存。
 
-![](E:\myworkspace\Java面试复习知识点\images\http-request.png)
+![](E:\myworkspace\Cliff-of-Thinking-Java\计算机网络\images\http-request.png)
 
 当服务器返回响应时，还会发出一组 HTTP 响应报头，用于描述响应的内容类型、长度、缓存指令、验证令牌等。 例如，在上图的交互中，服务器返回一个 1024 字节的响应，指示客户端将其缓存最多 120 秒，并提供一个验证令牌（“x234dff”），可在响应过期后用来检查资源是否被修改。
 

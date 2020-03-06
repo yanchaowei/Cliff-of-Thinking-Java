@@ -2232,6 +2232,68 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 }
 ```
 
+### put(K key, V value)
+
+```java
+public V put(K key, V value) {
+    return putVal(hash(key), key, value, false, true);
+}
+
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)
+        n = (tab = resize()).length;
+    if ((p = tab[i = (n - 1) & hash]) == null)
+        tab[i] = newNode(hash, key, value, null);
+    else {
+        Node<K,V> e; K k;
+        if (p.hash == hash &&
+            ((k = p.key) == key || (key != null && key.equals(k))))
+            e = p;
+        else if (p instanceof TreeNode)
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+        else {
+            for (int binCount = 0; ; ++binCount) {
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // existing mapping for key
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    ++modCount;
+    if (++size > threshold)
+        resize();
+    afterNodeInsertion(evict);
+    return null;
+}
+```
+
+`put(K key, V value)`方法会在内部调用`putVal()`方法，该方法执行过程如下：
+
+> + 现根据给定的hash值获得其在table数组中的下标并获取该位置上的节点：`p = tab[i = (n - 1) & hash]`，如果该节点为空，则将插入元素封装为新的节点插入该位置；若该节点不为空，继续向下执行；
+>
+> + 判断该节点的hash值和key是否与给定的相等，若相等，则节点的位置是新元素需要插入的位置，将其赋值给 e ，等待后续操作；若不符合相等条件，继续向下执行；
+> + 判断该节点是否是TreeNode类型，若是，则说明该位置的hash链已经转化为红黑树，需要进行红黑树的插入操作：`e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);`；若不是，继续向下执行；
+> + 进行到这里，说明该位置的hash链为链表，需要做的就是在此链表上遍历，找到新元素需要插入的位置，若遍历完毕，e 为 null，也就是新元素插在链表尾部；这里要注意，如果此时的链表长度大于等于转化为红黑树的阈值，则要进行链表向红黑树的转化；如果插入的位置（判断方式：`e.hash == hash && ((k = e.key) == key || (key != null && key.equals(k)))`)存在节点，便赋值给 e ，等待后续操作，下面继续执行后续操作；
+> + 判断 e 是否为空，若不为空，则说明要插入的位置存在节点，此时判断`onlyIfAbsent`，值为`false`说明键值存在，可以取代原来的值，或者原值为空，也进行赋值操作。并返回原值oldValue。
+> + 判断实际大小大于阈值则扩容，插入后回调。
+
 ## 总结：
 
 1、HashMap 的底层是个 Node 数组（Node<K,V>[] table），在数组的具体索引位置，如果存在多个节点，则可能是以链表或红黑树的形式存在。
